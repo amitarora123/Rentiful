@@ -6,8 +6,12 @@ import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setLocation } from "@/store/feature/filterSlice";
 import { useEffect } from "react";
+import { useGetPropertiesQuery } from "@/store/api";
 
 export default function Page() {
+  const { data } = useGetPropertiesQuery();
+  console.log(data);
+
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const { properties } = useAppSelector((state) => state.property);
@@ -35,7 +39,7 @@ export default function Page() {
           <p>
             <strong> 100</strong> Places in all over the world.
           </p>
-          {properties.map((property, index) => (
+          {data?.map((property, index) => (
             <PropertyCard key={index} {...property} />
           ))}
         </div>

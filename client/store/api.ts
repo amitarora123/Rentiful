@@ -2,6 +2,7 @@
 import { Manager, Tenant, Property } from "@/types/prismaTypes";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
+import { getProperties } from "aws-amplify/storage";
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({
@@ -113,6 +114,23 @@ export const api = createApi({
         },
       ],
     }),
+
+    getProperties: build.query<Property[], void>({
+      queryFn: async (_, _queryApi, _extraOptions, fetchWithBQ) => {
+        try {
+          const response = await fetchWithBQ("/properties");
+          if (response.error) {
+            return { error: response.error };
+          }
+          return { data: response.data as Property[] };
+        } catch (error: any) {
+          return {
+            error:
+              error.message || "Something went wrong while fetching properties",
+          };
+        }
+      },
+    }),
   }),
 });
 
@@ -120,4 +138,5 @@ export const {
   useGetAuthUserQuery,
   useUpdateTenantSettingsMutation,
   useUpdateManagerSettingsMutation,
+  useGetPropertiesQuery,
 } = api;

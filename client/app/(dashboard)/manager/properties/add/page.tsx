@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 
-export default function PropertyFormPage() {
+const Page = () => {
   const [formData, setFormData] = useState({
     name: "",
     state: "",
@@ -251,4 +251,6 @@ export default function PropertyFormPage() {
       </div>
     </form>
   );
-}
+};
+
+export default Page;

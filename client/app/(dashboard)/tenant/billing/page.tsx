@@ -29,7 +29,7 @@ const Billing = () => {
               <div className="flex h-full flex-col lg:flex-row gap-5">
                 <div className="h-full ">
                   <Image
-                    src={activeProperty.imageUrls[0]}
+                    src={activeProperty.photoUrls[0] ?? "/property-image-0.jpg"}
                     width={150}
                     height={200}
                     alt={activeProperty.name}
@@ -44,14 +44,14 @@ const Billing = () => {
                     <p className="font-bold my-1">{activeProperty.name}</p>
                     <div className="flex gap-1 text-xs items-center">
                       <MapPin className="size-3" />
-                      {formatAddress(activeProperty.address)}
+                      {formatAddress(activeProperty.location!)}
                     </div>
                   </div>
                   <div className="max-lg:mt-5">
                     <span className="font-bold ">
-                      ${activeProperty.pricePerNight}{" "}
+                      ${activeProperty.pricePerMonth}{" "}
                     </span>{" "}
-                    night
+                    month
                   </div>
                 </div>
               </div>

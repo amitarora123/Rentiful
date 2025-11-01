@@ -75,7 +75,10 @@ const SettingsForm = ({
                   Save
                 </Button>
                 <Button
-                  onClick={() => setEditMode(false)}
+                  onClick={() => {
+                    form.reset();
+                    setEditMode(false);
+                  }}
                   type="reset"
                   variant="outline"
                 >

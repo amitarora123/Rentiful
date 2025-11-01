@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { demoProperties, managers } from "./constants";
-import { Address } from "@/types/property";
+import { Location } from "@/types/prismaTypes";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -14,6 +14,6 @@ export const getPropertyDetails = (propertyId: number) => {
   return { property, manager };
 };
 
-export const formatAddress = ({ country, city, state }: Address) => {
+export const formatAddress = ({ country, city, state }: Location) => {
   return `${city}, ${state}, ${country}`;
 };

@@ -2,7 +2,7 @@
 
 import Logo from "./Logo";
 import Image from "next/image";
-import { MessageCircle, Search } from "lucide-react";
+import { MessageCircle, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -45,7 +45,7 @@ const Header = ({ children }: HeaderProps) => {
             Discover your perfect rental apartment with our advanced search
           </p>
         </div>
-      ) : (
+      ) : authUser?.userRole === "tenant" ? (
         <div className="flex-1 ml-5 md:ml-10">
           <Link prefetch href="/properties">
             <Button
@@ -54,6 +54,18 @@ const Header = ({ children }: HeaderProps) => {
             >
               <Search className="size-5 align-middle" />
               <span className="hidden md:block ">Search Properties</span>
+            </Button>
+          </Link>
+        </div>
+      ) : (
+        <div className="flex-1 ml-5 md:ml-10">
+          <Link prefetch href="/manager/properties/add">
+            <Button
+              variant="secondary"
+              className="bg-secondary-500 hover:bg-secondary-400 cursor-pointer text-white"
+            >
+              <Plus className="size-5 align-middle" />
+              <span className="hidden md:block ">Add Property</span>
             </Button>
           </Link>
         </div>
@@ -89,7 +101,7 @@ const Header = ({ children }: HeaderProps) => {
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger className="flex items-center cursor-pointer gap-2 focus:outline-none ">
               <Avatar>
-                <AvatarImage src={authUser?.userInfo?.image}></AvatarImage>
+                {/* <AvatarImage src={authUser?.userInfo?.image}></AvatarImage> */}
                 <AvatarFallback className="bg-primary-600">
                   {authUser?.userRole?.[0].toUpperCase()}
                 </AvatarFallback>

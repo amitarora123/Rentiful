@@ -1,5 +1,3 @@
-import { Property } from "@/types/property";
-import React from "react";
 import { Card, CardContent, CardFooter } from "./ui/card";
 import Image from "next/image";
 import { Bed, Heart, ShowerHead, Star } from "lucide-react";
@@ -10,33 +8,39 @@ import {
   removeFromFavorite,
 } from "@/store/feature/propertySlice";
 import Link from "next/link";
+import { Property } from "@/types/prismaTypes";
 
-interface PropertyCardProps extends Property {
-  className?: string;
-}
 const PropertyCard = ({
   id,
-  address,
+  locationId,
   baths,
   name,
   beds,
-  features,
-  poolAvailable,
-  ratings,
-  reviews,
-  pricePerNight,
-  imageUrls,
-  className,
-}: PropertyCardProps) => {
+  amenities,
+  applicationFee,
+  description,
+  highlights,
+  isParkingIncluded,
+  isPetsAllowed,
+  photoUrls,
+  location,
+  averageRating,
+  numberOfReviews,
+  pricePerMonth,
+}: Property) => {
   const { favoritePropertyIds } = useAppSelector((state) => state.property);
   const dispatch = useAppDispatch();
 
   return (
-    <Card className={`py-0 min-w-80  min-h-64 ${className}`}>
+    <Card className="py-0 min-w-80  min-h-64">
       <CardContent className="px-0">
         <div className="w-full  border-primary  relative h-48">
           <Image
-            src={imageUrls[1]}
+            src={
+              photoUrls && photoUrls.length
+                ? photoUrls[0]
+                : "/property-image-0.jpg"
+            }
             alt={name}
             fill
             className="object-cover rounded-t-lg"
@@ -60,7 +64,7 @@ const PropertyCard = ({
 
           <div className="flex px-4 absolute bottom-2 justify-between items-center w-full">
             <div className="  flex gap-2 items-center">
-              {features.slice(0, 3).map((feature, index) => (
+              {amenities.slice(0, 3).map((feature, index) => (
                 <span
                   key={index}
                   className="bg-white/50 py-1 px-2 rounded-full text-white font-semibold text-[10px]"
@@ -81,7 +85,7 @@ const PropertyCard = ({
               <h2 className="font-bold text-lg">{name}</h2>
             </Link>
             <p>
-              {address.country} {address.state}
+              {location?.country} {location?.state}
             </p>
           </div>
 
@@ -91,10 +95,11 @@ const PropertyCard = ({
                 className="w-5 h-5 text-yellow-600"
                 fill="oklch(68.1% 0.162 75.834)"
               />{" "}
-              <span>{ratings}</span> <span>({reviews} Reviews)</span>
+              <span>{averageRating}</span>{" "}
+              <span>({numberOfReviews} Reviews)</span>
             </div>
             <div>
-              <span className="font-bold">${pricePerNight}</span> night
+              <span className="font-bold">${pricePerMonth}</span> month
             </div>
           </div>
 
@@ -110,7 +115,7 @@ const PropertyCard = ({
           <ShowerHead />
           {baths} Baths
         </div>
-        {poolAvailable && (
+        {amenities.includes("Pool") && (
           <div className="flex gap-2">
             <Image
               src="/swimming-pool.png"

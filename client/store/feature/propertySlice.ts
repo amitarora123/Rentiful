@@ -1,5 +1,5 @@
+import { Property } from "@/types/prismaTypes";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Property } from "@/types/property";
 
 interface PropertiesState {
   properties: Property[];
@@ -178,10 +178,7 @@ export const propertySlice = createSlice({
         (id) => id != action.payload
       );
     },
-    fetchProperties: (state) => {
-      
-    }
-
+    fetchProperties: (state) => {},
   },
 });
 
