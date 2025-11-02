@@ -9,6 +9,10 @@ const prisma = new PrismaClient();
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
 });
 
 export const getProperties = async (
@@ -30,6 +34,17 @@ export const getProperties = async (
       latitude,
       longitude,
     } = req.query;
+
+    console.log(
+      favoriteIds,
+      priceMax,
+      priceMin,
+      beds,
+      baths,
+      propertyType,
+      latitude,
+      longitude
+    );
 
     let whereConditions: Prisma.Sql[] = [];
 
@@ -76,8 +91,16 @@ export const getProperties = async (
     }
 
     if (amenities && amenities !== "any") {
-      const amenitiesArray = (amenities as string).split(",");
-      whereConditions.push(Prisma.sql`p.amenities @> ${amenitiesArray}`);
+      const amenitiesArray = (amenities as string)
+        .split(",")
+        .map((a) => a.trim());
+
+      // Use ARRAY[...]::"Amenity"[] without extra quotes
+      whereConditions.push(
+        Prisma.sql`amenities @> ARRAY[${Prisma.join(
+          amenitiesArray.map((a) => Prisma.sql`${a}::"Amenity"`)
+        )}]::"Amenity"[]`
+      );
     }
 
     if (availableFrom && availableFrom !== "any") {
@@ -121,7 +144,7 @@ export const getProperties = async (
       'state', l.state,
       'country', l.country,
       'postalCode', l."postalCode",
-      'coordinates', json_buildObject(
+      'coordinates', json_build_object(
         'longitude', ST_X(l."coordinates"::geometry),
         'latitude', ST_Y(l."coordinates"::geometry)
       )) as location
@@ -250,10 +273,17 @@ export const createProperty = async (
 
     // creating location
     const [location] = await prisma.$queryRaw<Location[]>`
-          INSERT INTO "Location" (address, city, state, country, "postalCode", coordinates)
-          VALUES (${address}, ${city}, ${state}, ${country}, ${postalCode}, ST_Set_SRID(ST_MakePoint(${longitude}, ${latitude}), 4326))
-          RETURNING id, address, city, state, country, "postalCode", ST_AsText(coordinates) as coordinates;
-        `;
+  INSERT INTO "Location" (address, city, state, country, "postalCode", coordinates)
+  VALUES (
+    ${address},
+    ${city},
+    ${state},
+    ${country},
+    ${postalCode},
+    ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)
+  )
+  RETURNING id, address, city, state, country, "postalCode", ST_AsText(coordinates) as coordinates;
+`;
 
     // create property
 
@@ -261,6 +291,7 @@ export const createProperty = async (
       data: {
         ...propertyData,
         photoUrls,
+        
         locationId: location.id,
         managerCognitoId,
         amenities:

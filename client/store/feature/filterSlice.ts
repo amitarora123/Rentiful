@@ -1,37 +1,60 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from "../store";
+import { Amenity, PropertyType } from "@/types/prismaTypes";
 
 interface Location {
   name: string;
   lng: number;
   lat: number;
 }
+export interface Filters {
+  location: Location | null;
+  propertyType: PropertyType | null;
+  priceRange: [number, number] | [null, null];
+  beds: string;
+  baths: string;
+  availableFrom: string;
+  squareFeet: [number, number] | [null, null];
+  amenities: Amenity[];
+}
 
-interface FilterState {
-  location: Location;
+export interface FilterState {
+  isFiltersFullOpen: boolean;
+  viewMode: "grid" | "list";
+  filters: Filters;
 }
 
 const initialState: FilterState = {
-  location: {
-    name: "",
-    lng: 0,
-    lat: 0,
+  filters: {
+    location: null,
+    propertyType: null,
+    priceRange: [null, null],
+    squareFeet: [null, null],
+    availableFrom: "any",
+    baths: "any",
+    beds: "any",
+    amenities: [],
   },
+  viewMode: "grid",
+  isFiltersFullOpen: false,
 };
 
 export const filterSlice = createSlice({
   name: "filter",
   initialState,
   reducers: {
-    setLocation: (state, action: PayloadAction<Location>) => {
-      state.location = action.payload;
+    setFilters: (state, action: PayloadAction<Partial<Filters>>) => {
+      state.filters = { ...state.filters, ...action.payload };
+    },
+    toggleFiltersFullOpen: (state) => {
+      state.isFiltersFullOpen = !state.isFiltersFullOpen;
+    },
+    setViewMode: (state, action: PayloadAction<"grid" | "list">) => {
+      state.viewMode = action.payload;
     },
   },
 });
 
-export const { setLocation } = filterSlice.actions;
-
-// Other code such as selectors can use the imported `RootState` type
-export const selectLocation = (state: RootState) => state.filter.location;
+export const { setFilters, toggleFiltersFullOpen, setViewMode } =
+  filterSlice.actions;
 
 export default filterSlice.reducer;

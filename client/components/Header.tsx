@@ -16,7 +16,6 @@ import { useAuthenticator } from "@aws-amplify/ui-react";
 import { usePathname } from "next/navigation";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
-import { AvatarImage } from "@radix-ui/react-avatar";
 import { useGetAuthUserQuery } from "@/store/api";
 
 type HeaderProps = {
@@ -26,8 +25,6 @@ const Header = ({ children }: HeaderProps) => {
   const { authStatus, signOut } = useAuthenticator();
   const { data: authUser } = useGetAuthUserQuery();
   const pathname = usePathname();
-
-  console.log(authUser);
 
   const isDashboardPage =
     pathname.includes("manager") || pathname.includes("tenant") ? true : false;

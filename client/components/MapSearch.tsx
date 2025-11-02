@@ -4,17 +4,18 @@ import { useState, useEffect, useRef } from "react";
 import { useMap } from "@/context/map-context";
 import { Input } from "./ui/input";
 import { Place } from "@/types/property";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setFilters } from "@/store/feature/filterSlice";
 
 const mapBoxAccessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
 export default function MapSearch() {
-  const { flyTo } = useMap();
-  const [query, setQuery] = useState("");
+  const location = useAppSelector((state) => state.filter.filters.location);
+  const [query, setQuery] = useState(location?.name || "");
   const [results, setResults] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const location = useAppSelector((state) => state.filter.location);
+  const dispatch = useAppDispatch();
   const isUserTyping = useRef(false);
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -48,14 +49,9 @@ export default function MapSearch() {
     }
   }
 
-  // When location changes externally
   useEffect(() => {
-    if (location.lng && location.lat) flyTo([location.lng, location.lat]);
-    if (location.name) {
-      isUserTyping.current = false; // 👈 mark as external update
-      setQuery(location.name);
-    }
-  }, [location, flyTo]);
+    console.log(location);
+  }, [location]);
 
   return (
     <div className="relative w-full">
@@ -77,7 +73,17 @@ export default function MapSearch() {
               key={place.id}
               onClick={() => {
                 setResults([]);
-                flyTo(place.center);
+                isUserTyping.current = false;
+                setQuery(place.place_name);
+                dispatch(
+                  setFilters({
+                    location: {
+                      name: place.place_name,
+                      lat: place.center[1],
+                      lng: place.center[0],
+                    },
+                  })
+                );
               }}
               className={`px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm ${
                 index === 0 ? "rounded-t-lg" : ""

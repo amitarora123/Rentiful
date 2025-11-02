@@ -35,3 +35,24 @@ export const getLeasePayments = async (
       .json({ message: `Error retrieving lease payments: ${error.message}` });
   }
 };
+
+export const getPropertyLeases = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const leases = await prisma.property.findUnique({
+      where: { id: Number(id) },
+      select: {
+        leases: true,
+      },
+    });
+
+    res.json(leases?.leases);
+  } catch (error: any) {
+    res
+      .status(500)
+      .json({ message: `Error retrieving property leases: ${error.message}` });
+  }
+};

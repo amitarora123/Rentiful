@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { Hub } from "aws-amplify/utils";
 import { Amplify } from "aws-amplify";
 
 import {
@@ -189,7 +190,11 @@ const formFields = {
 };
 
 const Auth = ({ children }: { children: React.ReactNode }) => {
-  const { data: authUser, isLoading: authLoading } = useGetAuthUserQuery();
+  const {
+    data: authUser,
+    isLoading: authLoading,
+    refetch,
+  } = useGetAuthUserQuery();
 
   const router = useRouter();
   const pathname = usePathname();
@@ -198,6 +203,16 @@ const Auth = ({ children }: { children: React.ReactNode }) => {
   const isDashboardPage =
     pathname.startsWith("/manager") || pathname.startsWith("/tenant");
 
+  useEffect(() => {
+    const unsubscribe = Hub.listen("auth", ({ payload }) => {
+      if (payload.event === "signedIn" || payload.event === "signedOut") {
+        refetch();
+      }
+    });
+
+    return unsubscribe;
+  }, [refetch]);
+
   // Redirect authenticated user away from auth pages
   useEffect(() => {
     if (authLoading) return;
@@ -205,19 +220,22 @@ const Auth = ({ children }: { children: React.ReactNode }) => {
     if (authUser && isAuthPage) {
       router.push("/");
     } else if (!authUser && isDashboardPage) {
+      console.log("user has not made yet");
       router.replace("/sign-in");
     }
   }, [authUser, isAuthPage, router, isDashboardPage, authLoading]);
 
   // Allow access to public pages without authentication
 
-  if (!isAuthPage && !isDashboardPage) {
-    return <>{children}</>;
-  }
-
   if (authLoading) {
     return <div>Loading...</div>;
   }
+
+  if (!isAuthPage && !isDashboardPage) {
+    console.log("returning children");
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
       <Authenticator

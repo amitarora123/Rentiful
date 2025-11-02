@@ -53,11 +53,10 @@ export type Tenant = {
   phoneNumber: string;
   cognitoId: string;
 
-  // relations (arrays simplified as IDs or nested optional)
-  applicationIds?: number[];
-  leaseIds?: number[];
-  favoritePropertyIds?: number[];
-  propertyIds?: number[];
+  favorites?: Property[];
+  applications?: Application[];
+  leases?: Lease[];
+  properties?: Property[];
 };
 
 export type Manager = {
@@ -77,7 +76,10 @@ export type Location = {
   state: string;
   country: string;
   postalCode: string;
-  coordinates: [number, number]; // string for frontend (geo serialized)
+  coordinates: {
+    longitude: number;
+    latitude: number;
+  }; // string for frontend (geo serialized)
 
   propertyIds?: number[];
 };
@@ -103,12 +105,10 @@ export type Property = {
   numberOfReviews?: number;
   locationId: number;
   managerCognitoId: string;
-  location?: Location;
+
+  location: Location;
+  manager: Manager;
   // optional arrays of IDs for relations
-  leaseIds?: number[];
-  applicationIds?: number[];
-  favoritedByTenantIds?: number[];
-  tenantIds?: number[];
 };
 
 export type Application = {
@@ -122,6 +122,11 @@ export type Application = {
   phoneNumber: string;
   message?: string;
   leaseId?: number;
+
+  property: Property;
+  tenant: Tenant;
+  lease: Lease;
+  manager: Manager;
 };
 
 export type Lease = {
@@ -130,9 +135,12 @@ export type Lease = {
   endDate: string;
   rent: number;
   deposit: number;
-  propertyId: number;
-  tenantCognitoId: string;
 
+  tenant: Tenant;
+  Property: Property;
+  propertyId: number;
+  nextPaymentDate: string;
+  tenantCognitoId: string;
   applicationId?: number;
   paymentIds?: number[];
 };

@@ -6,6 +6,7 @@ import {
 } from "../controllers/propertyController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import multer from "multer";
+import { getPropertyLeases } from "../controllers/leaseControllers";
 const router = Router();
 
 const storage = multer.memoryStorage();
@@ -19,4 +20,5 @@ router.post(
   upload.array("photos"),
   createProperty
 );
+router.get("/:id/leases", getPropertyLeases);
 export default router;

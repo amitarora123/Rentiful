@@ -6,6 +6,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useMap } from "@/context/map-context";
 import { Property } from "@/types/prismaTypes";
 import { useGetPropertiesQuery } from "@/store/api";
+import { useAppSelector } from "@/store/hooks";
 
 const mapBoxAccessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
@@ -13,7 +14,9 @@ export default function MapBox() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const { setMap, map } = useMap();
 
-  const { data: properties } = useGetPropertiesQuery();
+  const { filters } = useAppSelector((state) => state.filter);
+  const { data: properties } = useGetPropertiesQuery(filters);
+  console.log(properties);
 
   if (map && properties) {
     properties?.forEach((property) => {
@@ -24,14 +27,19 @@ export default function MapBox() {
     });
   }
 
+  // When location? changes externally
+
   useEffect(() => {
     if (!mapContainerRef.current) return; // wait until the div is rendered
     // If map already initialized, don't create again
     const mapInstance = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/amitbaghla123/cmcwugfgj003801s91fki8gt3",
-      center: [-74.005941, 40.712784],
-      zoom: 9,
+      center: [
+        filters.location?.lng ?? -79.153346,
+        filters.location?.lat ?? 40.622948,
+      ],
+      zoom: 4,
       accessToken: mapBoxAccessToken,
     });
 
@@ -53,9 +61,11 @@ export default function MapBox() {
 }
 
 const createPropertyMarker = (property: Property, map: mapboxgl.Map) => {
-  console.log(property.location);
   const marker = new mapboxgl.Marker()
-    .setLngLat(property!.location!.coordinates)
+    .setLngLat([
+      property.location!.coordinates.longitude,
+      property.location!.coordinates.latitude,
+    ])
     .setPopup(
       new mapboxgl.Popup({
         className: "property-popup",

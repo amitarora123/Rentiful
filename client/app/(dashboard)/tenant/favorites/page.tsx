@@ -1,30 +1,63 @@
 "use client";
 import PropertyCard from "@/components/PropertyCard";
+import {
+  useAddFavoritePropertyMutation,
+  useGetAuthUserQuery,
+  useGetPropertiesQuery,
+  useGetPropertyQuery,
+  useGetTenantQuery,
+  useRemoveFavoritePropertyMutation,
+} from "@/store/api";
 import { useAppSelector } from "@/store/hooks";
 import { Loader } from "lucide-react";
-import React from "react";
+import { useState } from "react";
 
 const FavoriteProperties = () => {
-  const { favoritePropertyIds, properties } = useAppSelector(
-    (state) => state.property
-  );
+  const { data: authUser } = useGetAuthUserQuery();
+  const [loadMoreProperties, setLoadMoreProperties] = useState(false);
 
-  const favoriteProperties = favoritePropertyIds.map((id) =>
-    properties.find((property) => property.id === id)
+  const { data: tenant } = useGetTenantQuery(
+    authUser?.userInfo.cognitoId || ""
   );
+  const [addFavorite] = useAddFavoritePropertyMutation();
+  const [removeFavorite] = useRemoveFavoritePropertyMutation();
+
+  const removeFromFavorite = async (propertyId: number) => {
+    await removeFavorite({
+      cognitoId: authUser!.userInfo.cognitoId,
+      propertyId,
+    });
+  };
+  const addToFavorite = async (propertyId: number) => {
+    await addFavorite({
+      cognitoId: authUser!.userInfo.cognitoId,
+      propertyId,
+    });
+  };
+
+  const favoriteProperties = tenant?.favorites;
   return (
     <div className="flex-1 ">
       <div className=" flex flex-wrap gap-10 p-8 ">
-        {favoriteProperties.map((property, index) => (
-          <PropertyCard {...property!} key={index} />
+        {favoriteProperties?.map((property, index) => (
+          <PropertyCard
+            showFavoriteButton={!!authUser}
+            isFavorite={true}
+            addToFavorite={addToFavorite}
+            removeFromFavorite={removeFromFavorite}
+            property={property}
+            key={index}
+          />
         ))}
       </div>
 
-      <div className="text-center my-10">
-        <p className="flex items-center justify-center gap-5">
-          <Loader className="animate-spin size-5" /> Load more properties
-        </p>
-      </div>
+      {loadMoreProperties && (
+        <div className="text-center my-10">
+          <p className="flex items-center justify-center gap-5">
+            <Loader className="animate-spin size-5" /> Load more properties
+          </p>
+        </div>
+      )}
     </div>
   );
 };

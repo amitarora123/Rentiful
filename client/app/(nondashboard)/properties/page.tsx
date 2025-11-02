@@ -1,22 +1,18 @@
 "use client";
 
 import MapBox from "@/components/map";
-import PropertyCard from "@/components/PropertyCard";
 import { useSearchParams } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setLocation } from "@/store/feature/filterSlice";
+import { useAppDispatch } from "@/store/hooks";
+import { setFilters } from "@/store/feature/filterSlice";
 import { useEffect } from "react";
-import { useGetPropertiesQuery } from "@/store/api";
+
+import Listings from "../components/Listing";
 
 export default function Page() {
-  const { data } = useGetPropertiesQuery();
-  console.log(data);
-
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
-  const { properties } = useAppSelector((state) => state.property);
 
-  const name = searchParams.get("query");
+  const name = searchParams.get("location");
   const lng = Number(searchParams.get("lng"));
   const lat = Number(searchParams.get("lat"));
 
@@ -26,7 +22,8 @@ export default function Page() {
       return;
     }
     const location = { name, lng, lat };
-    dispatch(setLocation(location));
+
+    dispatch(setFilters({ location }));
   }, [name, lng, lat, dispatch]);
 
   return (
@@ -35,14 +32,7 @@ export default function Page() {
         <MapBox />
       </div>
       <div className="col-span-1 h-full max-sm:px-5 sm:max-h-screen sm:overflow-y-auto">
-        <div className="flex flex-col gap-5">
-          <p>
-            <strong> 100</strong> Places in all over the world.
-          </p>
-          {data?.map((property, index) => (
-            <PropertyCard key={index} {...property} />
-          ))}
-        </div>
+        <Listings />
       </div>
     </div>
   );

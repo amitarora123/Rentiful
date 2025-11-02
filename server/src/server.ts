@@ -32,11 +32,11 @@ app.get("/", (req, res) => {
 
 // routes
 
-app.use("/api/tenant", authMiddleware(["tenant"]), tenantRoutes);
-app.use("/api/manager", authMiddleware(["manager"]), managerRoutes);
+app.use("/api/tenants", authMiddleware(["tenant"]), tenantRoutes);
+app.use("/api/managers", authMiddleware(["manager"]), managerRoutes);
 app.use("/api/properties", propertyRoutes);
 app.use("/api/leases", leaseRoutes);
-app.use("/api/application", applicationRoutes);
+app.use("/api/applications", applicationRoutes);
 
 const port = process.env.PORT || 3002;
 app.listen(port, () => {

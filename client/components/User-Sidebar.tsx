@@ -7,6 +7,7 @@ import {
   Grid2X2Icon,
   Heart,
   Settings,
+  Trees,
 } from "lucide-react";
 
 import {
@@ -36,11 +37,11 @@ const tenantUrls = [
     url: "/tenant/applications",
     icon: Computer,
   },
-  //   {
-  //     title: "Residence",
-  //     url: "/tenants/residence",
-  //     icon: Trees,
-  //   },
+  {
+    title: "Residence",
+    url: "/tenant/residences",
+    icon: Trees,
+  },
   {
     title: "Billing History",
     url: "/tenant/billing",

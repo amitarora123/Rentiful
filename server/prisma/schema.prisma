@@ -122,7 +122,7 @@ model Property {
   baths             Float
   squareFeet        Int
   propertyType      PropertyType
-  postedDate        DateTime
+  postedDate        DateTime     @default(now())
   averageRating     Float?
   numberOfReviews   Int?
   locationId        Int

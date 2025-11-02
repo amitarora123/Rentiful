@@ -1,256 +1,245 @@
 "use client";
 
-import React, { useState } from "react";
-import UploadCard from "@/components/UploadCard";
-import { Input } from "@/components/ui/input";
+import { CustomFormField } from "@/components/FormField";
+import { Form } from "@/components/ui/form";
+import { PropertyFormData, propertySchema } from "@/lib/schema";
+import { useCreatePropertyMutation, useGetAuthUserQuery } from "@/store/api";
+import { AmenityEnum, HighlightEnum, PropertyTypeEnum } from "@/lib/constants";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
+import DashboardHeader from "@/app/(dashboard)/tenant/components/DashBoardHeader";
 
-const Page = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    state: "",
-    city: "",
-    country: "",
-    latitude: "",
-    longitude: "",
-    features: "",
-    ratings: 0,
-    reviews: 0,
-    pricePerNight: 0,
-    beds: 0,
-    baths: 0,
-    poolAvailable: false,
-    managerId: 1,
+const NewProperty = () => {
+  const [createProperty] = useCreatePropertyMutation();
+  const { data: authUser } = useGetAuthUserQuery();
+
+  const form = useForm<PropertyFormData>({
+    resolver: zodResolver(propertySchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      pricePerMonth: 1000,
+      securityDeposit: 500,
+      applicationFee: 100,
+      isPetsAllowed: true,
+      isParkingIncluded: true,
+      photoUrls: [],
+      amenities: "",
+      highlights: "",
+      beds: 1,
+      baths: 1,
+      squareFeet: 1000,
+      address: "",
+      city: "",
+      state: "",
+      country: "",
+      postalCode: "",
+      propertyType: PropertyTypeEnum.Rooms,
+    },
   });
 
-  const [images, setImages] = useState<(File | null)[]>([
-    null,
-    null,
-    null,
-    null,
-    null,
-  ]);
+  const onSubmit = async (data: PropertyFormData) => {
+    if (!authUser?.cognitoInfo?.userId) {
+      throw new Error("No manager ID found");
+    }
 
-  const handleChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      // Convert image files to Base64 or handle them as FormData (if your backend expects file uploads)
-      const imageUrls: string[] = [];
-
-      for (const img of images) {
-        if (img) {
-          const base64 = await fileToBase64(img);
-          imageUrls.push(base64 as string);
-        } else {
-          imageUrls.push("");
-        }
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (key === "photoUrls") {
+        const files = value as File[];
+        files.forEach((file: File) => {
+          formData.append("photos", file);
+        });
+      } else if (Array.isArray(value)) {
+        formData.append(key, JSON.stringify(value));
+      } else {
+        formData.append(key, String(value));
       }
+    });
 
-      const payload = {
-        name: formData.name,
-        address: {
-          state: formData.state,
-          city: formData.city,
-          country: formData.country,
-          coordinates: {
-            latitude: parseFloat(formData.latitude),
-            longitude: parseFloat(formData.longitude),
-          },
-        },
-        features: formData.features.split(",").map((f) => f.trim()),
-        ratings: formData.ratings,
-        reviews: formData.reviews,
-        pricePerNight: formData.pricePerNight,
-        beds: formData.beds,
-        baths: formData.baths,
-        poolAvailable: formData.poolAvailable,
-        imageUrls,
-        managerId: formData.managerId,
-      };
+    formData.append("managerCognitoId", authUser.cognitoInfo.userId);
 
-      const res = await fetch("http://localhost:4000/api/property/post", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    const res = await createProperty(formData);
 
-      if (!res.ok) throw new Error("Failed to post property");
-
-      alert("✅ Property added successfully!");
-      setFormData({
-        name: "",
-        state: "",
-        city: "",
-        country: "",
-        latitude: "",
-        longitude: "",
-        features: "",
-        ratings: 0,
-        reviews: 0,
-        pricePerNight: 0,
-        beds: 0,
-        baths: 0,
-        poolAvailable: false,
-        managerId: 1,
-      });
-      setImages([null, null, null, null, null]);
-    } catch (err) {
-      console.error(err);
-      alert("❌ Failed to upload property.");
+    if (res) {
+      form.reset();
     }
   };
 
-  const fileToBase64 = (file: File) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
-
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex flex-col gap-8 p-10 bg-gray-50 min-h-screen"
-    >
-      <h1 className="text-3xl font-semibold">Add New Property</h1>
+    <div className="dashboard-container">
+      <DashboardHeader
+        title="Add New Property"
+        subtitle="Create a new property listing with detailed information"
+      />
+      <div className="bg-white rounded-xl p-6">
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="p-4 space-y-10"
+          >
+            {/* Basic Information */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
+              <div className="space-y-4">
+                <CustomFormField name="name" label="Property Name" />
+                <CustomFormField
+                  name="description"
+                  label="Description"
+                  type="textarea"
+                />
+              </div>
+            </div>
 
-      {/* Property Basic Info */}
-      <div className="grid grid-cols-2 gap-6 bg-white p-6 rounded-lg shadow-sm">
-        <div>
-          <Label className="mb-3">Property Name</Label>
-          <Input
-            value={formData.name}
-            onChange={(e) => handleChange("name", e.target.value)}
-          />
-        </div>
+            <hr className="my-6 border-gray-200" />
 
-        <div>
-          <Label className="mb-3">Price per Night</Label>
-          <Input
-            type="number"
-            value={formData.pricePerNight}
-            onChange={(e) =>
-              handleChange("pricePerNight", parseFloat(e.target.value))
-            }
-          />
-        </div>
+            {/* Fees */}
+            <div className="space-y-6">
+              <h2 className="text-lg font-semibold mb-4">Fees</h2>
+              <CustomFormField
+                name="pricePerMonth"
+                label="Price per Month"
+                type="number"
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CustomFormField
+                  name="securityDeposit"
+                  label="Security Deposit"
+                  type="number"
+                />
+                <CustomFormField
+                  name="applicationFee"
+                  label="Application Fee"
+                  type="number"
+                />
+              </div>
+            </div>
 
-        <div>
-          <Label className="mb-3">Beds</Label>
-          <Input
-            type="number"
-            value={formData.beds}
-            onChange={(e) => handleChange("beds", parseInt(e.target.value))}
-          />
-        </div>
+            <hr className="my-6 border-gray-200" />
 
-        <div>
-          <Label className="mb-3">Baths</Label>
-          <Input
-            type="number"
-            value={formData.baths}
-            onChange={(e) => handleChange("baths", parseInt(e.target.value))}
-          />
-        </div>
+            {/* Property Details */}
+            <div className="space-y-6">
+              <h2 className="text-lg font-semibold mb-4">Property Details</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <CustomFormField
+                  name="beds"
+                  label="Number of Beds"
+                  type="number"
+                />
+                <CustomFormField
+                  name="baths"
+                  label="Number of Baths"
+                  type="number"
+                />
+                <CustomFormField
+                  name="squareFeet"
+                  label="Square Feet"
+                  type="number"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <CustomFormField
+                  name="isPetsAllowed"
+                  label="Pets Allowed"
+                  type="switch"
+                />
+                <CustomFormField
+                  name="isParkingIncluded"
+                  label="Parking Included"
+                  type="switch"
+                />
+              </div>
+              <div className="mt-4">
+                <CustomFormField
+                  name="propertyType"
+                  label="Property Type"
+                  type="select"
+                  options={Object.keys(PropertyTypeEnum).map((type) => ({
+                    value: type,
+                    label: type,
+                  }))}
+                />
+              </div>
+            </div>
 
-        <div className="col-span-2">
-          <Label className="mb-3">Features (comma separated)</Label>
-          <Textarea
-            value={formData.features}
-            onChange={(e) => handleChange("features", e.target.value)}
-          />
-        </div>
+            <hr className="my-6 border-gray-200" />
 
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            checked={formData.poolAvailable}
-            onCheckedChange={(val) => handleChange("poolAvailable", val)}
-          />
-          <Label className="mb-3">Pool Available</Label>
-        </div>
+            {/* Amenities and Highlights */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">
+                Amenities and Highlights
+              </h2>
+              <div className="space-y-6">
+                <CustomFormField
+                  name="amenities"
+                  label="Amenities"
+                  type="select"
+                  options={Object.keys(AmenityEnum).map((amenity) => ({
+                    value: amenity,
+                    label: amenity,
+                  }))}
+                />
+                <CustomFormField
+                  name="highlights"
+                  label="Highlights"
+                  type="select"
+                  options={Object.keys(HighlightEnum).map((highlight) => ({
+                    value: highlight,
+                    label: highlight,
+                  }))}
+                />
+              </div>
+            </div>
+
+            <hr className="my-6 border-gray-200" />
+
+            {/* Photos */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Photos</h2>
+              <CustomFormField
+                name="photoUrls"
+                label="Property Photos"
+                type="file"
+                accept="image/*"
+              />
+            </div>
+
+            <hr className="my-6 border-gray-200" />
+
+            {/* Additional Information */}
+            <div className="space-y-6">
+              <h2 className="text-lg font-semibold mb-4">
+                Additional Information
+              </h2>
+              <CustomFormField name="address" label="Address" />
+              <div className="flex justify-between gap-4">
+                <CustomFormField name="city" label="City" className="w-full" />
+                <CustomFormField
+                  name="state"
+                  label="State"
+                  className="w-full"
+                />
+                <CustomFormField
+                  name="postalCode"
+                  label="Postal Code"
+                  className="w-full"
+                />
+              </div>
+              <CustomFormField name="country" label="Country" />
+            </div>
+
+            <Button
+              type="submit"
+              className="bg-primary-700 text-white w-full mt-8"
+            >
+              Create Property
+            </Button>
+          </form>
+        </Form>
       </div>
-
-      {/* Address Section */}
-      <div className="grid grid-cols-2 gap-6 bg-white p-6 rounded-lg shadow-sm">
-        <div>
-          <Label className="mb-3">State</Label>
-          <Input
-            value={formData.state}
-            onChange={(e) => handleChange("state", e.target.value)}
-          />
-        </div>
-
-        <div>
-          <Label className="mb-3">City</Label>
-          <Input
-            value={formData.city}
-            onChange={(e) => handleChange("city", e.target.value)}
-          />
-        </div>
-
-        <div>
-          <Label className="mb-3">Country</Label>
-          <Input
-            value={formData.country}
-            onChange={(e) => handleChange("country", e.target.value)}
-          />
-        </div>
-
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <Label className="mb-3">Latitude</Label>
-            <Input
-              type="number"
-              value={formData.latitude}
-              onChange={(e) => handleChange("latitude", e.target.value)}
-            />
-          </div>
-          <div className="flex-1">
-            <Label className="mb-3">Longitude</Label>
-            <Input
-              type="number"
-              value={formData.longitude}
-              onChange={(e) => handleChange("longitude", e.target.value)}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Upload Images */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
-        <Label className="mb-3">Upload Property Images</Label>
-        <div className="flex flex-wrap gap-5 mt-4">
-          {images.map((_, idx) => (
-            <UploadCard
-              key={idx}
-              onChange={(file: File) =>
-                setImages((prev) => {
-                  const updated = [...prev];
-                  updated[idx] = file;
-                  return updated;
-                })
-              }
-            />
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <Button type="submit" className="mt-4 px-6 py-2 text-base">
-          Submit Property
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 };
 
-export default Page;
+export default NewProperty;

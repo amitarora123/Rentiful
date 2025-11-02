@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { Place } from "@/types/property";
@@ -12,9 +12,13 @@ const Hero = () => {
   const [query, setQuery] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Place[]>([]);
+  const [location, setLocation] = useState<Place | null>(null);
   const mapBoxAccessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
+  const isUserTyping = useRef(false);
+
   useEffect(() => {
+    if (!isUserTyping.current) return;
     const handler = setTimeout(() => {
       if (query.trim().length > 2) fetchPlaces(query);
       else setResults([]);
@@ -77,13 +81,22 @@ const Hero = () => {
                   placeholder="Search for location, property, etc."
                   className="px-3 py-1 bg-white text-xs focus-visible:ring-0 focus-visible:outline-0  focus:border-0 rounded-none h-full   w-full"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) => {
+                    isUserTyping.current = true;
+                    setQuery(e.target.value);
+                  }}
                 />
 
                 {results.length > 0 && (
                   <ul className="absolute bg-white shadow-lg w-full mt-1 rounded-lg z-20">
                     {results.map((place, index) => (
                       <li
+                        onClick={() => {
+                          isUserTyping.current = false;
+                          setQuery(place.place_name);
+                          setLocation(place);
+                          setResults([]);
+                        }}
                         key={index}
                         className={`px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm ${
                           index === 0 ? "rounded-t-lg" : ""
@@ -91,14 +104,7 @@ const Hero = () => {
                           index === results.length - 1 ? "rounded-b-lg" : ""
                         } `}
                       >
-                        <Link
-                          prefetch
-                          href={`/properties?query=${place.place_name}&lng=${place.center[0]}&lat=${place.center[1]}`}
-                          onClick={() => setQuery(place.place_name)}
-                          className="w-full block"
-                        >
-                          {place.place_name}
-                        </Link>
+                        {place.place_name}
                       </li>
                     ))}
                   </ul>
@@ -107,7 +113,7 @@ const Hero = () => {
               <Link
                 prefetch
                 onClick={() => setResults([])}
-                href={`/properties?query=${query}`}
+                href={`/properties?location=${location?.place_name}&lng=${location?.center[0]}&lat=${location?.center[1]}`}
                 className="bg-secondary-500 text-white px-3 py-2 w-fit "
               >
                 {loading ? (

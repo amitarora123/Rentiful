@@ -13,7 +13,8 @@ import { useGetPropertiesQuery } from "@/store/api";
 
 const Billing = () => {
   const { application } = useAppSelector((state) => state.lease);
-  const { data: properties } = useGetPropertiesQuery();
+  const { filters } = useAppSelector((state) => state.filter);
+  const { data: properties } = useGetPropertiesQuery(filters);
   const { activeMethod } = useAppSelector((state) => state.payment);
 
   const activeLease = application.find((app) => app.status === "ACTIVE");

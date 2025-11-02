@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useState } from "react";
-import mapboxgl from "mapbox-gl";
 
 interface MapContextType {
   map: mapboxgl.Map | null;

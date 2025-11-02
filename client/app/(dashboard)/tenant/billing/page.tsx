@@ -5,20 +5,31 @@ import { useAppSelector } from "@/store/hooks";
 import { Download, Edit3Icon, Mail, MapPin, User2 } from "lucide-react";
 import { formatAddress } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import React from "react";
 import { Button } from "@/components/ui/button";
 import { FaCcVisa } from "react-icons/fa";
 import { BillingHistoryTable } from "@/components/billing-table";
+import { useGetAuthUserQuery, useGetLeasesQuery } from "@/store/api";
 
 const Billing = () => {
   const { application } = useAppSelector((state) => state.lease);
   const { properties } = useAppSelector((state) => state.property);
   const { activeMethod } = useAppSelector((state) => state.payment);
+  const { data: authUser } = useGetAuthUserQuery();
 
-  const activeLease = application.find((app) => app.status === "ACTIVE");
-  const activeProperty = properties.find(
-    (p) => p.id === activeLease?.propertyId
+  const { data: leases } = useGetLeasesQuery(
+    parseInt(authUser?.cognitoInfo?.userId || "0"),
+    { skip: !authUser?.cognitoInfo?.userId }
   );
+
+  const today = new Date();
+
+  const activeLease = leases?.find((lease) => {
+    const start = new Date(lease.startDate);
+    const end = new Date(lease.endDate);
+
+    return start < today && end > today;
+  });
+  const activeProperty = activeLease?.Property;
 
   return (
     <div className="flex-1 w-full p-5 lg:p-10">

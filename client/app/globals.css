@@ -378,3 +378,12 @@
 [data-amplify-form] {
   @apply !p-0;
 }
+
+/* Fix scroll lock issue after closing Radix Select / Dialog / Popover */
+body[data-scroll-locked] {
+  overflow: auto !important;
+}
+
+.dashboard-container {
+  @apply p-10;
+}
