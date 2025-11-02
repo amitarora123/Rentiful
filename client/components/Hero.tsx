@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { Place } from "@/types/property";
@@ -17,6 +17,25 @@ const Hero = () => {
 
   const isUserTyping = useRef(false);
 
+  const fetchPlaces = useCallback(
+    async (q: string) => {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+            q
+          )}.json?access_token=${mapBoxAccessToken}&autocomplete=true&limit=5`
+        );
+        const data = await res.json();
+        console.log(data);
+        setResults(data.features || []);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [mapBoxAccessToken]
+  );
+
   useEffect(() => {
     if (!isUserTyping.current) return;
     const handler = setTimeout(() => {
@@ -24,23 +43,8 @@ const Hero = () => {
       else setResults([]);
     }, 500);
     return () => clearTimeout(handler);
-  }, [query]);
+  }, [query, fetchPlaces]);
 
-  async function fetchPlaces(q: string) {
-    setLoading(true);
-    try {
-      const res = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-          q
-        )}.json?access_token=${mapBoxAccessToken}&autocomplete=true&limit=5`
-      );
-      const data = await res.json();
-      console.log(data);
-      setResults(data.features || []);
-    } finally {
-      setLoading(false);
-    }
-  }
   return (
     <div className="w-full h-screen">
       <div className="relative w-full h-full">

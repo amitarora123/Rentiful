@@ -27,11 +27,8 @@ export default function MapBox() {
     });
   }
 
-  // When location? changes externally
-
   useEffect(() => {
-    if (!mapContainerRef.current) return; // wait until the div is rendered
-    // If map already initialized, don't create again
+    if (!mapContainerRef.current) return;
     const mapInstance = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/amitbaghla123/cmcwugfgj003801s91fki8gt3",
@@ -50,7 +47,7 @@ export default function MapBox() {
     resizeMap();
 
     return () => mapInstance.remove();
-  }, []);
+  }, [filters.location?.lat, filters.location?.lng, setMap]);
 
   return (
     <div
