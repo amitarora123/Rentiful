@@ -9,9 +9,9 @@ import { useAppSelector } from "@/store/hooks";
 import { Property } from "@/types/prismaTypes";
 import PropertyCard from "@/components/PropertyCard";
 import CardCompact from "@/components/PropertyCompactCard";
-
 const Listings = () => {
   const { data: authUser } = useGetAuthUserQuery();
+
   const { data: tenant } = useGetTenantQuery(
     authUser?.cognitoInfo?.userId || "",
     {
@@ -20,14 +20,13 @@ const Listings = () => {
   );
   const [addFavorite] = useAddFavoritePropertyMutation();
   const [removeFavorite] = useRemoveFavoritePropertyMutation();
+
   const viewMode = useAppSelector((state) => state.filter.viewMode);
   const filters = useAppSelector((state) => state.filter.filters);
+  
+  const { data, isLoading, isError } = useGetPropertiesQuery(filters);
 
-  const {
-    data: properties,
-    isLoading,
-    isError,
-  } = useGetPropertiesQuery(filters);
+  const properties = data?.properties;
 
   const removeFromFavorite = async (propertyId: number) => {
     await removeFavorite({
@@ -35,6 +34,7 @@ const Listings = () => {
       propertyId,
     });
   };
+
   const addToFavorite = async (propertyId: number) => {
     await addFavorite({
       cognitoId: authUser!.userInfo.cognitoId,
@@ -67,7 +67,7 @@ const Listings = () => {
           Places in {filters.location?.name ?? "Globally"}
         </span>
       </h3>
-      <div className="flex">
+      <div className="flex flex-col ">
         <div className="p-4 w-full ">
           {properties?.map((property) =>
             viewMode === "grid" ? (

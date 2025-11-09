@@ -9,15 +9,26 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { FaCcVisa } from "react-icons/fa";
 import { BillingHistoryTable } from "@/components/billing-table";
-import { useGetPropertiesQuery } from "@/store/api";
+import {
+  useGetApplicationsQuery,
+  useGetAuthUserQuery,
+  useGetPropertiesQuery,
+} from "@/store/api";
 
 const Billing = () => {
-  const { application } = useAppSelector((state) => state.lease);
+  const { data: authUser } = useGetAuthUserQuery();
   const { filters } = useAppSelector((state) => state.filter);
-  const { data: properties } = useGetPropertiesQuery(filters);
+  const { data } = useGetPropertiesQuery(filters);
   const { activeMethod } = useAppSelector((state) => state.payment);
+  const { data: application } = useGetApplicationsQuery({
+    userId: authUser!.userInfo.cognitoId,
+    userType: authUser!.userRole,
+  });
 
-  const activeLease = application.find((app) => app.status === "ACTIVE");
+  const properties = data?.properties;
+  const activeLease = application?.find(
+    (app) => app.status === "Approved"
+  )?.lease;
   const activeProperty = properties?.find(
     (p) => p.id === activeLease?.propertyId
   );

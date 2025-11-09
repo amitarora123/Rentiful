@@ -117,7 +117,13 @@ const Hero = () => {
               <Link
                 prefetch
                 onClick={() => setResults([])}
-                href={`/properties?location=${location?.place_name}&lng=${location?.center[0]}&lat=${location?.center[1]}`}
+                href={
+                  location?.center && location.place_name && location.id
+                    ? `/properties?location=${encodeURIComponent(
+                        location.place_name
+                      )}&lng=${location.center[0]}&lat=${location.center[1]}`
+                    : "/properties"
+                }
                 className="bg-secondary-500 text-white px-3 py-2 w-fit "
               >
                 {loading ? (

@@ -12,23 +12,15 @@ const mapBoxAccessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
 export default function MapBox() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
   const { setMap, map } = useMap();
 
   const { filters } = useAppSelector((state) => state.filter);
-  const { data: properties } = useGetPropertiesQuery(filters);
-  console.log(properties);
-
-  if (map && properties) {
-    properties?.forEach((property) => {
-      const marker = createPropertyMarker(property, map);
-      const markerElement = marker.getElement();
-      const path = markerElement.querySelector("path[fill='#3FB1CE']");
-      if (path) path.setAttribute("fill", "#000000");
-    });
-  }
+  const { data } = useGetPropertiesQuery(filters);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
+
     const mapInstance = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/amitbaghla123/cmcwugfgj003801s91fki8gt3",
@@ -43,20 +35,37 @@ export default function MapBox() {
     setMap(mapInstance);
 
     const resizeMap = () => setTimeout(() => mapInstance.resize(), 700);
-
     resizeMap();
 
     return () => mapInstance.remove();
-  }, [filters.location?.lat, filters.location?.lng, setMap]);
+  }, []);
+
+  // Handle markers whenever data changes
+  useEffect(() => {
+    if (!map || !data?.properties) return;
+
+    // Remove old markers
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = [];
+
+    // Add new markers
+    data.properties.forEach((property) => {
+      const marker = createPropertyMarker(property, map);
+      const markerElement = marker.getElement();
+      const path = markerElement.querySelector("path[fill='#3FB1CE']");
+      if (path) path.setAttribute("fill", "#000000");
+
+      markersRef.current.push(marker);
+    });
+  }, [map, data?.properties]);
 
   return (
     <div
       ref={mapContainerRef}
-      className="w-full h-[500px]  rounded-xl overflow-hidden"
+      className="w-full h-[500px] rounded-xl overflow-hidden"
     />
   );
 }
-
 const createPropertyMarker = (property: Property, map: mapboxgl.Map) => {
   const marker = new mapboxgl.Marker()
     .setLngLat([

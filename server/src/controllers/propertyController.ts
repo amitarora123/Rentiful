@@ -1,9 +1,10 @@
-import { Location, Prisma, PrismaClient } from "@prisma/client";
+import { Location, Prisma, PrismaClient, PropertyStatus } from "@prisma/client";
 import { wktToGeoJSON } from "@terraformer/wkt";
 import { Request, Response } from "express";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import axios from "axios";
+import { sendVerificationEmail } from "../utils/sendVerificationEmail";
 
 const prisma = new PrismaClient();
 
@@ -33,18 +34,13 @@ export const getProperties = async (
       availableFrom,
       latitude,
       longitude,
+      page,
+      limit = "3",
     } = req.query;
 
-    console.log(
-      favoriteIds,
-      priceMax,
-      priceMin,
-      beds,
-      baths,
-      propertyType,
-      latitude,
-      longitude
-    );
+    const lim = Number(limit) ?? 3;
+    const pageNo = Math.max(Number(page) ?? 0, 1);
+    const off = (pageNo - 1) * lim;
 
     let whereConditions: Prisma.Sql[] = [];
 
@@ -103,6 +99,10 @@ export const getProperties = async (
       );
     }
 
+    whereConditions.push(
+      Prisma.sql`p.status = ${PropertyStatus.Approved}::"PropertyStatus"`
+    );
+
     if (availableFrom && availableFrom !== "any") {
       const availableFromDate =
         typeof availableFrom === "string" ? availableFrom : null;
@@ -135,6 +135,15 @@ export const getProperties = async (
           ${degrees})`
       );
     }
+    const totalRowsQuery = Prisma.sql`
+      SELECT COUNT(*) OVER()::int AS total_rows FROM "Property" p
+      JOIN "Location" l ON p."locationId" = l.id
+      ${
+        whereConditions.length > 0
+          ? Prisma.sql`WHERE ${Prisma.join(whereConditions, " AND ")}`
+          : Prisma.empty
+      }
+  `;
 
     const completeQuery = Prisma.sql`
     SELECT p.*, json_build_object(
@@ -155,11 +164,22 @@ export const getProperties = async (
           ? Prisma.sql`WHERE ${Prisma.join(whereConditions, " AND ")}`
           : Prisma.empty
       }
+      limit 3 offset ${off}
     `;
 
+    const totalRows: any = await prisma.$queryRaw(totalRowsQuery);
     const properties = await prisma.$queryRaw(completeQuery);
 
-    res.status(200).json(properties);
+    const data = {
+      properties,
+      pagination: {
+        totalRows: totalRows[0].total_rows,
+        page: pageNo,
+        totalPage: Math.ceil(totalRows[0].total_rows / 3),
+        limit: lim,
+      },
+    };
+    res.status(200).json(data);
   } catch (error: any) {
     console.log(`Error retrieving properties: ${error.message}`);
     res.status(500).json({
@@ -287,11 +307,17 @@ export const createProperty = async (
 
     // create property
 
+    let expiresIn = new Date();
+    const today = new Date();
+
+    expiresIn.setSeconds(today.getSeconds() + 30);
+
+    const adminEmail = process.env.ADMIN_EMAIL;
+
     const newProperty = await prisma.property.create({
       data: {
         ...propertyData,
         photoUrls,
-        
         locationId: location.id,
         managerCognitoId,
         amenities:
@@ -310,6 +336,7 @@ export const createProperty = async (
         beds: parseInt(propertyData.beds),
         baths: parseFloat(propertyData.baths),
         squareFeet: parseInt(propertyData.squareFeet),
+        expiresIn,
       },
       include: {
         location: true,
@@ -317,7 +344,11 @@ export const createProperty = async (
       },
     });
 
-    res.status(201).json(newProperty);
+    sendVerificationEmail(adminEmail!, newProperty.id);
+
+    res.status(201).json({
+      message: "Property is created wait for it's approval",
+    });
   } catch (error: any) {
     console.log(`Error creating property: ${error.message}`);
     res.status(500).json({

@@ -3,7 +3,6 @@ import FilterSidebar from "@/components/Filter-Sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import React, { useRef } from "react";
 import FilterHeader from "../components/FilterHeader";
-import Header from "@/components/Header";
 
 const Layout = ({ children }: Readonly<{ children: React.ReactNode }>) => {
   return (

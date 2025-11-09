@@ -15,6 +15,8 @@ export interface Filters {
   availableFrom: string;
   squareFeet: [number, number] | [null, null];
   amenities: Amenity[];
+  page: string;
+  limit: string;
 }
 
 export interface FilterState {
@@ -33,6 +35,8 @@ const initialState: FilterState = {
     baths: "any",
     beds: "any",
     amenities: [],
+    page: "1",
+    limit: "3",
   },
   viewMode: "grid",
   isFiltersFullOpen: false,

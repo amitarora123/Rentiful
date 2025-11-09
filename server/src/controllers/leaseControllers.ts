@@ -11,6 +11,7 @@ export const getLeases = async (req: Request, res: Response): Promise<void> => {
         property: true,
       },
     });
+    console.log(leases);
     res.json(leases);
   } catch (error: any) {
     res
@@ -45,7 +46,11 @@ export const getPropertyLeases = async (
     const leases = await prisma.property.findUnique({
       where: { id: Number(id) },
       select: {
-        leases: true,
+        leases: {
+          include: {
+            tenant: true,
+          },
+        },
       },
     });
 

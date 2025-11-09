@@ -30,7 +30,6 @@ const PropertyTenants = () => {
   const { data: leases, isLoading: leasesLoading } =
     useGetPropertyLeasesQuery(propertyId);
 
-  console.log(leases);
   const { data: payments, isLoading: paymentsLoading } =
     useGetPaymentsQuery(propertyId);
 
@@ -102,11 +101,11 @@ const PropertyTenants = () => {
                     <TableCell>
                       <div className="flex items-center space-x-3">
                         <Image
-                          src="/landing-i1.png"
+                          src="/manager.webp"
                           alt={lease.tenant.name}
                           width={40}
-                          height={40}
-                          className="rounded-full"
+                          height={60}
+                          className="size-10 object-center object-cover rounded-full"
                         />
                         <div>
                           <div className="font-semibold">

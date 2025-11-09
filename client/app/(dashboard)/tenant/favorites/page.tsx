@@ -3,12 +3,10 @@ import PropertyCard from "@/components/PropertyCard";
 import {
   useAddFavoritePropertyMutation,
   useGetAuthUserQuery,
-  useGetPropertiesQuery,
   useGetPropertyQuery,
   useGetTenantQuery,
   useRemoveFavoritePropertyMutation,
 } from "@/store/api";
-import { useAppSelector } from "@/store/hooks";
 import { Loader } from "lucide-react";
 import { useState } from "react";
 

@@ -14,6 +14,7 @@ import leaseRoutes from "./routes/leaseRoutes";
 import applicationRoutes from "./routes/applicationRoutes";
 
 import { authMiddleware } from "./middleware/authMiddleware";
+import { approveProperty, rejectProperty } from "./controllers/adminController";
 
 dotenv.config();
 
@@ -37,6 +38,10 @@ app.use("/api/managers", authMiddleware(["manager"]), managerRoutes);
 app.use("/api/properties", propertyRoutes);
 app.use("/api/leases", leaseRoutes);
 app.use("/api/applications", applicationRoutes);
+
+app.get("/approve/:propertyId", approveProperty);
+app.get("/reject/:propertyId", rejectProperty);
+app.get("/increase-time/:propertyId", )
 
 const port = process.env.PORT || 3002;
 app.listen(port, () => {

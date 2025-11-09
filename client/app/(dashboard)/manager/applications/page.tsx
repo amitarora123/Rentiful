@@ -117,7 +117,7 @@ const Applications = () => {
                     {/* Right Buttons */}
                     <div className="flex gap-2">
                       <Link
-                        href={`/managers/properties/${application.property.id}`}
+                        href={`/manager/properties/${application.property.id}`}
                         className={`bg-white border border-gray-300 text-gray-700 py-2 px-4 
                           rounded-md flex items-center justify-center hover:bg-primary-700 hover:text-primary-50`}
                         scroll={false}

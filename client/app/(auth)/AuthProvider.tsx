@@ -220,7 +220,6 @@ const Auth = ({ children }: { children: React.ReactNode }) => {
     if (authUser && isAuthPage) {
       router.push("/");
     } else if (!authUser && isDashboardPage) {
-      console.log("user has not made yet");
       router.replace("/sign-in");
     }
   }, [authUser, isAuthPage, router, isDashboardPage, authLoading]);
@@ -232,7 +231,6 @@ const Auth = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!isAuthPage && !isDashboardPage) {
-    console.log("returning children");
     return <>{children}</>;
   }
 

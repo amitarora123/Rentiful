@@ -5,7 +5,6 @@ import { MotionProps as OriginalMotionProps } from "framer-motion";
 import { SettingsFormData } from "./zodSchema";
 import z from "zod";
 
-
 declare module "framer-motion" {
   interface MotionProps extends OriginalMotionProps {
     className?: string;
@@ -137,6 +136,13 @@ declare global {
     cognitoInfo: AuthUser;
     userInfo: Tenant | Manager;
     userRole: JsonObject | JsonPrimitive | JsonArray;
+  }
+
+  interface Pagination {
+    totalRows: number;
+    page: number;
+    totalPage: number;
+    limit: number;
   }
 }
 

@@ -58,7 +58,7 @@ export const api = createApi({
             userDetailsResponse.error.status === 404
           ) {
             userDetailsResponse = await fetchWithBQ({
-              url: `/${userRole}/`,
+              url: `/${userRole}s/`,
               method: "POST",
               body: {
                 cognitoId: user.userId,
@@ -90,13 +90,6 @@ export const api = createApi({
       },
     }),
 
-    // getProperties: build.query<Array<Property>, void>({
-    //   queryFn: async (_, _queryApi, _extraOptions, fetchWithBQ) => {
-    //     const data = await fetchWithBQ("/properties");
-
-    //     return data.data as Array<Property>;
-    //   },
-    // }),
     updateTenantSettings: build.mutation<
       Tenant,
       { cognitoId: string } & Partial<Tenant>
@@ -131,11 +124,10 @@ export const api = createApi({
     }),
 
     getProperties: build.query<
-      Property[],
+      { properties: Property[]; pagination: Pagination },
       Partial<Filters> & { favoriteIds?: number[] }
     >({
       query: (filters) => {
-        console.log(filters);
         const params = cleanParams({
           location: filters.location?.name,
           priceMin: filters.priceRange?.[0],
@@ -150,6 +142,8 @@ export const api = createApi({
           favoriteIds: filters.favoriteIds?.join(","),
           latitude: filters.location?.lat,
           longitude: filters.location?.lng,
+          page: filters.page,
+          limit: filters.limit,
         });
 
         return { url: "properties", params };
@@ -157,7 +151,10 @@ export const api = createApi({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: "Properties" as const, id })),
+              ...result.properties.map(({ id }) => ({
+                type: "Properties" as const,
+                id,
+              })),
               { type: "Properties", id: "LIST" },
             ]
           : [{ type: "Properties", id: "LIST" }],
@@ -262,7 +259,7 @@ export const api = createApi({
       ],
       async onQueryStarted(_, { queryFulfilled }) {
         await withToast(queryFulfilled, {
-          success: "Property created successfully!",
+          success: "Property created successfully! Wait for Approval",
           error: "Failed to create property.",
         });
       },

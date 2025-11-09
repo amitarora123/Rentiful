@@ -11,7 +11,6 @@ interface ImagePreviewsProps {
 const fallbackImage = "/property-image-0.jpg"; // must exist in /public
 
 const ImagePreviews = ({ images = [] }: ImagePreviewsProps) => {
-  console.log(images);
   const demoImages = [
     "/property-image-0.jpg",
     "/property-image-1.jpg",

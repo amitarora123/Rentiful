@@ -11,6 +11,7 @@ export const createTenant = async (
   try {
     const { cognitoId, name, email, phoneNumber } = req.body;
 
+    console.log("I am here", cognitoId, name, email, phoneNumber);
     const tenant = await prisma.tenant.create({
       data: {
         cognitoId,
