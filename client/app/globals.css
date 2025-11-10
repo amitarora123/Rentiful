@@ -385,5 +385,5 @@ body[data-scroll-locked] {
 }
 
 .dashboard-container {
-  @apply p-10;
+  @apply p-5 lg:p-10;
 }
