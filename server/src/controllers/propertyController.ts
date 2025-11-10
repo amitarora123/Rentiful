@@ -10,7 +10,6 @@ import { wktToGeoJSON } from "@terraformer/wkt";
 import { Request, Response } from "express";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import axios from "axios";
 import { sendVerificationEmail } from "../utils/sendVerificationEmail";
 
 const prisma = new PrismaClient();
@@ -311,7 +310,7 @@ export const createProperty = async (
     let expiresIn = new Date();
     const today = new Date();
 
-    expiresIn.setSeconds(today.getSeconds() + 30);
+    expiresIn.setMinutes(today.getMinutes() + 5);
 
     const adminEmail = process.env.ADMIN_EMAIL;
 

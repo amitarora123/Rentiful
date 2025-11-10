@@ -77,7 +77,7 @@ export async function sendVerificationEmail(
       <div class="container">
         <h1>Property Verification Needed</h1>
         <p>Hello,</p>
-        <p>Please review the property details below and take action. This verification link is valid for <strong>30 seconds</strong>.</p>
+        <p>Please review the property details below and take action. This verification link is valid for <strong>5 minutes</strong>.</p>
         
         <div class="property-info">
           <p><strong>Property Name:</strong> ${property.name}</p>
