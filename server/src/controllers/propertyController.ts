@@ -182,7 +182,7 @@ export const getProperties = async (
       pagination: {
         totalRows: totalRows[0]?.total_rows ?? 0,
         page: pageNo,
-        totalPage: Math.ceil(totalRows[0].total_rows / 3),
+        totalPage: Math.ceil(totalRows[0]?.total_rows ?? 0 / 3),
         limit: lim,
       },
     };
@@ -339,7 +339,7 @@ export const createProperty = async (
       },
     });
 
-    sendVerificationEmail(adminEmail!, newProperty.id);
+    sendVerificationEmail(adminEmail!, newProperty);
 
     res.status(201).json({
       message: "Property is created wait for it's approval",

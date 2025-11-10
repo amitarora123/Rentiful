@@ -3,9 +3,9 @@ module.exports = {
     {
       name: "project-management",
       script: "npm",
-      args: "run dev",
+      args: "run start",
       env: {
-        NODE_ENV: "development",
+        NODE_ENV: "production",
       },
     },
   ],
