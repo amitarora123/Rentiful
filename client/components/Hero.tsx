@@ -27,7 +27,6 @@ const Hero = () => {
           )}.json?access_token=${mapBoxAccessToken}&autocomplete=true&limit=5`
         );
         const data = await res.json();
-        console.log(data);
         setResults(data.features || []);
       } finally {
         setLoading(false);

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   ControllerRenderProps,
   FieldValues,
@@ -18,7 +18,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -158,6 +160,7 @@ export const CustomFormField: React.FC<FormFieldProps> = ({
             control={control}
             placeholder={placeholder}
             inputClassName={inputClassName}
+            options={options!}
           />
         );
       default:
@@ -215,6 +218,7 @@ interface MultiInputFieldProps {
   control: any;
   placeholder?: string;
   inputClassName?: string;
+  options: { value: string; label: string }[];
 }
 
 const MultiInputField: React.FC<MultiInputFieldProps> = ({
@@ -222,11 +226,13 @@ const MultiInputField: React.FC<MultiInputFieldProps> = ({
   control,
   placeholder,
   inputClassName,
+  options,
 }) => {
   const { fields, append, remove } = useFieldArray({
     control,
     name,
   });
+  const watchedValues: string[] = control._formValues[name] || [];
 
   return (
     <div className="space-y-2">
@@ -237,14 +243,36 @@ const MultiInputField: React.FC<MultiInputFieldProps> = ({
             name={`${name}.${index}`}
             render={({ field }) => (
               <FormControl>
-                <Input
-                  {...field}
-                  placeholder={placeholder}
-                  className={`flex-1 border-none bg-customgreys-darkGrey p-4 ${inputClassName}`}
-                />
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger
+                    className={`flex-1 border-none bg-customgreys-darkGrey p-4 ${inputClassName}`}
+                  >
+                    <SelectValue placeholder={placeholder || ""} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>
+                        {placeholder || "Select an option"}
+                      </SelectLabel>
+                      {options
+                        .filter(
+                          (op) =>
+                            !watchedValues.includes(op.value) ||
+                            op.value === field.value
+                        )
+                        .map(({ label, value }) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                    </SelectGroup>
+                  </SelectContent>
+                  <FormMessage />
+                </Select>
               </FormControl>
             )}
           />
+
           <Button
             type="button"
             onClick={() => remove(index)}

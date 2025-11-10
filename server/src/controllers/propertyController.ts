@@ -1,4 +1,11 @@
-import { Location, Prisma, PrismaClient, PropertyStatus } from "@prisma/client";
+import {
+  Amenity,
+  Highlight,
+  Location,
+  Prisma,
+  PrismaClient,
+  PropertyStatus,
+} from "@prisma/client";
 import { wktToGeoJSON } from "@terraformer/wkt";
 import { Request, Response } from "express";
 import { S3Client } from "@aws-sdk/client-s3";
@@ -242,11 +249,26 @@ export const createProperty = async (
       address,
       city,
       state,
+      longitude,
+      latitude,
       country,
       postalCode,
       managerCognitoId,
       ...propertyData
     } = req.body;
+
+    const rawAmenities = JSON.parse(propertyData.amenities);
+    const amenities: Amenity[] = Array.isArray(rawAmenities)
+      ? rawAmenities.filter((a): a is Amenity =>
+          Object.values(Amenity).includes(a)
+        )
+      : [];
+    const rawHighlights = JSON.parse(propertyData.highlights);
+    const highlights: Highlight[] = Array.isArray(rawHighlights)
+      ? rawHighlights.filter((h): h is Highlight =>
+          Object.values(Highlight).includes(h)
+        )
+      : [];
 
     const photoUrls = await Promise.all(
       files.map(async (file) => {
@@ -265,31 +287,8 @@ export const createProperty = async (
       })
     );
 
-    const geocodingUrl = `https://nominatim.openstreetmap.org/search?${new URLSearchParams(
-      {
-        street: address,
-        city,
-        country,
-        postalCode: postalCode,
-        format: "json",
-        limit: "1",
-      }
-    ).toString()}`;
-
-    const geoCodingResponse = await axios.get<{ lon?: string; lat?: string }[]>(
-      geocodingUrl,
-      {
-        headers: {
-          "User-Agent": "RealEstateApp (justsomedummyemail@gmail.com)",
-        },
-      }
-    );
-
-    const geoData = geoCodingResponse.data || [];
-    const [longitude, latitude] =
-      geoData[0]?.lon && geoData[0]?.lat
-        ? [parseFloat(geoData[0].lon || "0"), parseFloat(geoData[0].lat || "0")]
-        : [0, 0];
+    const formattedLongitude = Number(longitude);
+    const formattedLatitude = Number(latitude);
 
     // creating location
     const [location] = await prisma.$queryRaw<Location[]>`
@@ -300,7 +299,9 @@ export const createProperty = async (
     ${state},
     ${country},
     ${postalCode},
-    ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)
+    ST_SetSRID(ST_MakePoint(${formattedLongitude ?? 0}, ${
+      formattedLatitude ?? 0
+    }), 4326)
   )
   RETURNING id, address, city, state, country, "postalCode", ST_AsText(coordinates) as coordinates;
 `;
@@ -320,14 +321,8 @@ export const createProperty = async (
         photoUrls,
         locationId: location.id,
         managerCognitoId,
-        amenities:
-          typeof propertyData.amenities === "string"
-            ? propertyData.amenities.split(",")
-            : [],
-        highlights:
-          typeof propertyData.highlights === "string"
-            ? propertyData.highlights.split(",")
-            : [],
+        amenities,
+        highlights,
         isPetsAllowed: propertyData.isPetsAllowed === "true",
         isParkingIncluded: propertyData.isParkingIncluded === "true",
         pricePerMonth: parseFloat(propertyData.pricePerMonth),

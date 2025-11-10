@@ -1,7 +1,14 @@
 "use client";
 
 import { CustomFormField } from "@/components/FormField";
-import { Form } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { PropertyFormData, propertySchema } from "@/lib/schema";
 import { useCreatePropertyMutation, useGetAuthUserQuery } from "@/store/api";
 import { AmenityEnum, HighlightEnum, PropertyTypeEnum } from "@/lib/constants";
@@ -9,10 +16,37 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import DashboardHeader from "@/app/(dashboard)/tenant/components/DashBoardHeader";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Place } from "@/types/property";
+
+const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
 const NewProperty = () => {
   const [createProperty] = useCreatePropertyMutation();
   const { data: authUser } = useGetAuthUserQuery();
+  const [selectedCountryCode, setSelectedCountryCode] = useState("");
+  const [countries, setCountries] = useState<
+    Array<{
+      name: string;
+      cca2: string;
+    }>
+  >([]);
+  const [states, setStates] = useState<Array<string>>([]);
+  const [cities, setCities] = useState<Array<string>>([]);
+  const [addresses, setAddresses] = useState<Place[]>([]);
+
+  const [isCountryLoading, setIsCountryLoading] = useState(false);
+  const [isStateLoading, setIsStateLoading] = useState(false);
+  const [isCityLoading, setIsCityLoading] = useState(false);
+  const [isAddressLoading, setIsAddressLoading] = useState(false);
+
+  const [countryQuery, setCountryQuery] = useState("");
+  const [stateQuery, setStateQuery] = useState("");
+  const [cityQuery, setCityQuery] = useState("");
+  const [addressQuery, setAddressQuery] = useState("");
+
+  const isUserTyping = useRef(false);
 
   const form = useForm<PropertyFormData>({
     resolver: zodResolver(propertySchema),
@@ -25,8 +59,8 @@ const NewProperty = () => {
       isPetsAllowed: true,
       isParkingIncluded: true,
       photoUrls: [],
-      amenities: "",
-      highlights: "",
+      amenities: [],
+      highlights: [],
       beds: 1,
       baths: 1,
       squareFeet: 1000,
@@ -38,6 +72,73 @@ const NewProperty = () => {
       propertyType: PropertyTypeEnum.Rooms,
     },
   });
+
+  const fetchCountries = useCallback(async (val: string) => {
+    try {
+      setIsCountryLoading(true);
+
+      const res = await fetch(`https://restcountries.com/v3.1/name/${val}`);
+      const countriesList = await res.json();
+
+      const formattedCountriesNames = countriesList.map((country: any) => ({
+        name: country.name.common,
+        cca2: country.cca2,
+      }));
+      setCountries(formattedCountriesNames);
+    } catch (error) {
+      console.log("Something went wrong", error);
+    } finally {
+      setIsCountryLoading(false);
+    }
+  }, []);
+
+  const fetchStates = useCallback(async (countryCode: string, val: string) => {
+    try {
+      setIsStateLoading(true);
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?country=${countryCode}&types=region&access_token=${MAPBOX_ACCESS_TOKEN}`;
+
+      const res = await fetch(url);
+
+      const statesList = await res.json();
+      const formattedStatesList = statesList.features.map(
+        (state: any) => state.text
+      );
+
+      setStates(formattedStatesList);
+    } catch (error) {
+      console.log("Something went wrong", error);
+    } finally {
+      setIsStateLoading(false);
+    }
+  }, []);
+
+  const fetchCities = useCallback(
+    async (countryCode: string, state: string, val: string) => {
+      try {
+        setIsCityLoading(true);
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${val}.json?country=${countryCode}&region=${state}&types=place&access_token=${MAPBOX_ACCESS_TOKEN}`;
+
+        const res = await fetch(url);
+
+        const citiesList = await res.json();
+
+        const formattedCitiesList = citiesList.features.map(
+          (city: any) => city.text
+        );
+
+        setCities(formattedCitiesList);
+      } catch (error) {
+        console.log("Something went wrong", error);
+      } finally {
+        setIsCityLoading(false);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    console.log(form.formState.errors);
+  }, [form.formState.errors]);
 
   const onSubmit = async (data: PropertyFormData) => {
     if (!authUser?.cognitoInfo?.userId) {
@@ -66,6 +167,79 @@ const NewProperty = () => {
       form.reset();
     }
   };
+
+  const fetchAddresses = useCallback(async (q: string) => {
+    setIsAddressLoading(true);
+    try {
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+          q
+        )}.json?access_token=${MAPBOX_ACCESS_TOKEN}&autocomplete=true&limit=5`
+      );
+      const data = await res.json();
+      setAddresses(data.features || []);
+    } finally {
+      setIsAddressLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    document.onclick = () => {
+      setCountries([]);
+      setCities([]);
+      setStates([]);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isUserTyping.current) return;
+
+    const handler = setTimeout(() => {
+      if (countryQuery.trim().length > 2) fetchCountries(countryQuery);
+      else setCountries([]);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [countryQuery, fetchCountries]);
+
+  useEffect(() => {
+    if (
+      !isUserTyping.current ||
+      !selectedCountryCode ||
+      !form.getValues("state") ||
+      !cityQuery
+    )
+      return;
+
+    const handler = setTimeout(() => {
+      if (cityQuery.trim().length > 2)
+        fetchCities(selectedCountryCode, form.getValues("state"), cityQuery);
+      else setCities([]);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [cityQuery, fetchCities, selectedCountryCode, form]);
+
+  useEffect(() => {
+    if (!isUserTyping.current || !selectedCountryCode) return;
+
+    const handler = setTimeout(() => {
+      if (stateQuery.trim().length > 2)
+        fetchStates(selectedCountryCode, stateQuery);
+      else setStates([]);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [stateQuery, fetchStates, selectedCountryCode]);
+
+  useEffect(() => {
+    if (!isUserTyping.current) return;
+    const handler = setTimeout(() => {
+      if (addressQuery.trim().length > 2) fetchAddresses(addressQuery);
+      else setAddresses([]);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [addressQuery, fetchAddresses]);
 
   return (
     <div className="dashboard-container">
@@ -174,7 +348,7 @@ const NewProperty = () => {
                 <CustomFormField
                   name="amenities"
                   label="Amenities"
-                  type="select"
+                  type="multi-input"
                   options={Object.keys(AmenityEnum).map((amenity) => ({
                     value: amenity,
                     label: amenity,
@@ -183,7 +357,7 @@ const NewProperty = () => {
                 <CustomFormField
                   name="highlights"
                   label="Highlights"
-                  type="select"
+                  type="multi-input"
                   options={Object.keys(HighlightEnum).map((highlight) => ({
                     value: highlight,
                     label: highlight,
@@ -212,13 +386,160 @@ const NewProperty = () => {
               <h2 className="text-lg font-semibold mb-4">
                 Additional Information
               </h2>
-              <CustomFormField name="address" label="Address" />
+              {/* <CustomFormField name="country" label="Country" /> */}
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country</FormLabel>
+                    <FormControl>
+                      <div className="relative w-full">
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            setCountryQuery(e.target.value);
+                            isUserTyping.current = true;
+                            field.onChange(e);
+                          }}
+                          className="w-full px-4 py-2 focus-visible:ring-0 focus-visible:outline-0  outline-none shadow-sm"
+                        />
+
+                        {isCountryLoading && (
+                          <span className="absolute right-3 top-2 text-gray-400 text-sm">
+                            ...
+                          </span>
+                        )}
+
+                        <ul className="absolute bg-white shadow-lg w-full mt-1 rounded-lg z-20">
+                          {countries.slice(0, 5).map((country, index) => (
+                            <li
+                              onClick={() => {
+                                form.setValue("country", country.name);
+                                isUserTyping.current = false;
+                                setSelectedCountryCode(country.cca2);
+                              }}
+                              className={`w-full px-3 py-2 hover:bg-primary-100 ${
+                                index === 0 ? "rounded-t-lg" : ""
+                              } ${
+                                index === countries.length || index === 5
+                                  ? "rounded-b-lg"
+                                  : ""
+                              }`}
+                              key={index}
+                            >
+                              {country.name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="flex justify-between gap-4">
-                <CustomFormField name="city" label="City" className="w-full" />
-                <CustomFormField
+                <FormField
+                  control={form.control}
                   name="state"
-                  label="State"
-                  className="w-full"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>State</FormLabel>
+                      <FormControl>
+                        <div className="relative w-full">
+                          <Input
+                            {...field}
+                            disabled={!selectedCountryCode}
+                            onChange={(e) => {
+                              setStateQuery(e.target.value);
+                              isUserTyping.current = true;
+                              field.onChange(e);
+                            }}
+                            className="w-full px-4 py-2 focus-visible:ring-0 focus-visible:outline-0  outline-none shadow-sm"
+                          />
+
+                          {isStateLoading && (
+                            <span className="absolute right-3 top-2 text-gray-400 text-sm">
+                              ...
+                            </span>
+                          )}
+
+                          <ul className="absolute bg-white shadow-lg w-full mt-1 rounded-lg z-20">
+                            {states.slice(0, 5).map((state, index) => (
+                              <li
+                                onClick={() => {
+                                  form.setValue("state", state);
+                                  isUserTyping.current = false;
+                                }}
+                                className={`w-full px-3 py-2 hover:bg-primary-100 ${
+                                  index === 0 ? "rounded-t-lg" : ""
+                                } ${
+                                  index === states.length || index === 5
+                                    ? "rounded-b-lg"
+                                    : ""
+                                }`}
+                                key={index}
+                              >
+                                {state}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <FormControl>
+                        <div className="relative w-full">
+                          <Input
+                            {...field}
+                            disabled={!form.getValues("state")}
+                            onChange={(e) => {
+                              setCityQuery(e.target.value);
+                              isUserTyping.current = true;
+                              field.onChange(e);
+                            }}
+                            className="w-full px-4 py-2 focus-visible:ring-0 focus-visible:outline-0  outline-none shadow-sm"
+                          />
+
+                          {isCityLoading && (
+                            <span className="absolute right-3 top-2 text-gray-400 text-sm">
+                              ...
+                            </span>
+                          )}
+
+                          <ul className="absolute bg-white shadow-lg w-full mt-1 rounded-lg z-20">
+                            {cities.slice(0, 5).map((city, index) => (
+                              <li
+                                onClick={() => {
+                                  form.setValue("city", city);
+                                  isUserTyping.current = false;
+                                }}
+                                className={`w-full px-3 py-2 hover:bg-primary-100 ${
+                                  index === 0 ? "rounded-t-lg" : ""
+                                } ${
+                                  index === cities.length || index === 5
+                                    ? "rounded-b-lg"
+                                    : ""
+                                }`}
+                                key={index}
+                              >
+                                {city}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
                 <CustomFormField
                   name="postalCode"
@@ -226,7 +547,59 @@ const NewProperty = () => {
                   className="w-full"
                 />
               </div>
-              <CustomFormField name="country" label="Country" />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <div className="relative w-full">
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            setAddressQuery(e.target.value);
+                            isUserTyping.current = true;
+                            field.onChange(e);
+                          }}
+                          className="w-full px-4 py-2 focus-visible:ring-0 focus-visible:outline-0 outline-none shadow-sm"
+                        />
+
+                        {isAddressLoading && (
+                          <span className="absolute right-3 top-2 text-gray-400 text-sm">
+                            ...
+                          </span>
+                        )}
+
+                        <ul className="absolute bg-white shadow-lg w-full mt-1 rounded-lg z-20">
+                          {addresses.slice(0, 5).map((address, index) => (
+                            <li
+                              onClick={() => {
+                                form.setValue("address", address.place_name);
+                                form.setValue("longitude", address.center[0]);
+                                form.setValue("latitude", address.center[1]);
+                                isUserTyping.current = false;
+                                setAddresses([]);
+                              }}
+                              className={`w-full px-3 py-2 hover:bg-primary-100 ${
+                                index === 0 ? "rounded-t-lg" : ""
+                              } ${
+                                index === addresses.length || index === 5
+                                  ? "rounded-b-lg"
+                                  : ""
+                              }`}
+                              key={index}
+                            >
+                              {address.place_name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />{" "}
             </div>
 
             <Button

@@ -10,8 +10,8 @@ export const propertySchema = z.object({
   isPetsAllowed: z.boolean(),
   isParkingIncluded: z.boolean(),
   photoUrls: z.array(z.instanceof(File)),
-  amenities: z.string(),
-  highlights: z.string(),
+  amenities: z.array(z.string()),
+  highlights: z.array(z.string()),
   beds: z.number().min(0).max(10).int(),
   baths: z.number().min(0).max(10).int(),
   squareFeet: z.number().positive().int(),
@@ -21,6 +21,8 @@ export const propertySchema = z.object({
   state: z.string(),
   country: z.string(),
   postalCode: z.string(),
+  longitude: z.number().optional(),
+  latitude: z.number().optional()
 });
 
 export type PropertyFormData = z.infer<typeof propertySchema>;

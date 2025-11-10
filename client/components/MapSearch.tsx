@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useMap } from "@/context/map-context";
 import { Input } from "./ui/input";
 import { Place } from "@/types/property";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -48,10 +47,6 @@ export default function MapSearch() {
       setLoading(false);
     }
   }
-
-  useEffect(() => {
-    console.log(location);
-  }, [location]);
 
   return (
     <div className="relative w-full">
