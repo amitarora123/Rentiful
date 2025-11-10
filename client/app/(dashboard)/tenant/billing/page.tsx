@@ -8,29 +8,29 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { FaCcVisa } from "react-icons/fa";
 import { BillingHistoryTable } from "@/components/billing-table";
-import { useGetAuthUserQuery, useGetLeasesQuery } from "@/store/api";
+import {
+  useGetApplicationsQuery,
+  useGetAuthUserQuery,
+  useGetPropertiesQuery,
+} from "@/store/api";
 
 const Billing = () => {
-  const { application } = useAppSelector((state) => state.lease);
-  const { properties } = useAppSelector((state) => state.property);
-  const { activeMethod } = useAppSelector((state) => state.payment);
   const { data: authUser } = useGetAuthUserQuery();
-
-  const { data: leases } = useGetLeasesQuery(
-    parseInt(authUser?.cognitoInfo?.userId || "0"),
-    { skip: !authUser?.cognitoInfo?.userId }
-  );
-
-  const today = new Date();
-
-  const activeLease = leases?.find((lease) => {
-    const start = new Date(lease.startDate);
-    const end = new Date(lease.endDate);
-
-    return start < today && end > today;
+  const { filters } = useAppSelector((state) => state.filter);
+  const { data } = useGetPropertiesQuery(filters);
+  const { activeMethod } = useAppSelector((state) => state.payment);
+  const { data: application } = useGetApplicationsQuery({
+    userId: authUser!.userInfo.cognitoId,
+    userType: authUser!.userRole,
   });
-  const activeProperty = activeLease?.Property;
 
+  const properties = data?.properties;
+  const activeLease = application?.find(
+    (app) => app.status === "Approved"
+  )?.lease;
+  const activeProperty = properties?.find(
+    (p) => p.id === activeLease?.propertyId
+  );
   return (
     <div className="flex-1 w-full p-5 lg:p-10">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

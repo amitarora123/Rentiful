@@ -173,7 +173,7 @@ export const getProperties = async (
     const data = {
       properties,
       pagination: {
-        totalRows: totalRows[0].total_rows,
+        totalRows: totalRows[0]?.total_rows ?? 0,
         page: pageNo,
         totalPage: Math.ceil(totalRows[0].total_rows / 3),
         limit: lim,
